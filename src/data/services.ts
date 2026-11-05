@@ -1,0 +1,128 @@
+import { Service } from '../types'
+
+const commonBenefits = ['Tailored to your business needs', 'Quality-focused delivery', 'Clear communication at every stage', 'Support after launch']
+
+export const services: Service[] = [
+  {
+    slug: 'erp-development', title: 'ERP Development', icon: 'Layers', enquiryValue: 'ERP Development',
+    short: 'Customized ERP systems to automate business operations, manage resources and improve organizational productivity.',
+    heroHeading: 'Smart ERP Solutions for Smarter Business Management.',
+    intro: 'We design ERP systems around the way your organization actually works, bringing inventory, people, finance and customer data into one connected platform.',
+    cardFeatures: ['Inventory Management', 'HR Management', 'Finance Management', 'Sales and Purchase', 'CRM', 'Reports and Analytics'],
+    features: ['Inventory Management', 'Sales Management', 'Purchase Management', 'HR Management', 'Payroll', 'Finance', 'CRM', 'Reports and Analytics'],
+    benefits: ['Automate repetitive manual work', 'One source of truth for business data', 'Better visibility through reports', ...commonBenefits.slice(0, 1)],
+    technologies: ['React', 'TypeScript', 'PHP', 'Laravel', 'MySQL', 'Python'],
+    faqs: [
+      { q: 'Can the ERP be customized for our industry?', a: 'Yes. Modules are scoped and designed around your workflows after a requirement analysis.' },
+      { q: 'Can we start with only a few modules?', a: 'Yes. We can begin with the most important modules and add others in later phases.' },
+      { q: 'Do you provide support after delivery?', a: 'Support and maintenance options can be discussed as part of your project scope.' },
+    ],
+  },
+  {
+    slug: 'mobile-app-development', title: 'Mobile App Development', icon: 'Smartphone', enquiryValue: 'Mobile App Development',
+    short: 'Build powerful Android and iOS applications with modern interfaces and smooth user experiences.',
+    heroHeading: 'Powerful Mobile Applications for Your Business.',
+    intro: 'From concept and interface design to API integration and maintenance, we build mobile apps that are easy to use and ready to grow with your business.',
+    cardFeatures: ['Android Applications', 'iOS Applications', 'Cross-Platform Apps', 'API Integration', 'App Maintenance'],
+    features: ['Android', 'iOS', 'Cross-Platform', 'UI/UX', 'API Integration', 'Payment Integration', 'App Maintenance'],
+    benefits: ['Reach customers on their phones', 'Smooth, intuitive interfaces', 'Single codebase option with Flutter', 'Ongoing maintenance options'],
+    technologies: ['Flutter', 'Java', 'Figma', 'JavaScript', 'MySQL'],
+    faqs: [
+      { q: 'Do you build for both Android and iOS?', a: 'Yes. We can build native or cross-platform apps depending on your requirements and budget.' },
+      { q: 'Can the app connect to our existing systems?', a: 'Yes. API integration with existing software and services is part of our offering.' },
+      { q: 'Will you help publish the app?', a: 'Publishing guidance can be included in the project scope.' },
+    ],
+  },
+  {
+    slug: 'desktop-application-development', title: 'Desktop Application Development', icon: 'Monitor', enquiryValue: 'Desktop Application',
+    short: 'Develop reliable desktop applications that simplify business processes and improve operational efficiency.',
+    heroHeading: 'Reliable Desktop Software for Better Business Operations.',
+    intro: 'Dependable desktop software for billing, inventory and daily operations, built to be fast, stable and simple for your team to use.',
+    cardFeatures: ['Business Applications', 'Billing Software', 'Inventory Applications', 'Database Integration', 'Custom Software'],
+    features: ['Billing Applications', 'Inventory Applications', 'Business Management', 'Database Applications', 'Custom Desktop Software'],
+    benefits: ['Fast, stable day-to-day performance', 'Designed for your workflow', 'Reliable data storage', 'Simple for staff to learn'],
+    technologies: ['Java', 'Python', 'MySQL', 'JavaScript'],
+    faqs: [
+      { q: 'Can the software work offline?', a: 'Desktop applications can be designed to work offline and sync when a connection is available.' },
+      { q: 'Can you replace our spreadsheets?', a: 'Yes. We can turn spreadsheet-based processes into structured software.' },
+      { q: 'Can data be migrated?', a: 'Existing data can be reviewed and migrated as part of the project.' },
+    ],
+  },
+  {
+    slug: 'digital-marketing', title: 'Digital Marketing', icon: 'Megaphone', enquiryValue: 'Digital Marketing',
+    short: 'Improve your online presence and grow your business through strategic digital marketing solutions.',
+    heroHeading: 'Grow Your Brand. Reach Your Audience.',
+    intro: 'Strategy-led digital marketing that helps the right audience find your business, from search visibility to social media and paid campaigns.',
+    cardFeatures: ['SEO', 'Social Media Marketing', 'Google Ads', 'Content Marketing', 'Campaign Analytics'],
+    features: ['SEO', 'Social Media Marketing', 'Google Ads', 'Content Marketing', 'Campaign Strategy', 'Analytics'],
+    benefits: ['Improve online visibility', 'Reach targeted audiences', 'Measure what works', 'Consistent brand messaging'],
+    technologies: ['Google Ads', 'Analytics', 'Figma', 'SEO Tools'],
+    faqs: [
+      { q: 'How soon will we see results?', a: 'Timelines vary by channel and goals. Paid campaigns can start faster; SEO is typically gradual.' },
+      { q: 'Do you create the content too?', a: 'Yes. Content and creatives can be planned and produced as part of the campaign.' },
+      { q: 'Will we get reports?', a: 'Campaign analytics and regular reporting can be included.' },
+    ],
+  },
+  {
+    slug: 'web-design', title: 'Web Design', icon: 'PenTool', enquiryValue: 'Web Design',
+    short: 'Create visually attractive, responsive and user-friendly website experiences.',
+    heroHeading: 'Designing Digital Experiences That Inspire.',
+    intro: 'Thoughtful UI/UX design that balances brand personality with usability, from first wireframe to polished responsive layouts.',
+    cardFeatures: ['UI/UX Design', 'Landing Pages', 'Corporate Websites', 'Website Redesign', 'Wireframes and Prototypes'],
+    features: ['UI/UX', 'Landing Page Design', 'Corporate Website Design', 'Dashboard Design', 'E-commerce UI', 'Responsive Design'],
+    benefits: ['Clear, modern visual identity', 'Easy navigation for visitors', 'Works on every screen size', 'Design ready for development'],
+    technologies: ['Figma', 'HTML5', 'CSS3', 'React'],
+    faqs: [
+      { q: 'Do you provide prototypes before development?', a: 'Yes. Wireframes and prototypes help you review the design before development starts.' },
+      { q: 'Can you redesign an existing website?', a: 'Yes. We can refresh the design while keeping your content and brand.' },
+      { q: 'Is the design responsive?', a: 'All designs are created to work across mobile, tablet and desktop.' },
+    ],
+  },
+  {
+    slug: 'web-development', title: 'Web Development', icon: 'Code2', enquiryValue: 'Web Development',
+    short: 'Build scalable, secure and high-performance websites and web applications.',
+    heroHeading: 'Build Powerful Websites for the Digital World.',
+    intro: 'Modern websites and web applications built with clean code, sensible architecture and attention to performance and security.',
+    cardFeatures: ['Frontend Development', 'Backend Development', 'API Integration', 'Database Integration', 'Custom Web Applications'],
+    features: ['Corporate Websites', 'Custom Web Applications', 'Frontend Development', 'Backend Development', 'Database Integration', 'API Integration'],
+    benefits: ['Fast, responsive experiences', 'Maintainable, scalable code', 'Secure by design practices', 'Ready for future features'],
+    technologies: ['React', 'TypeScript', 'JavaScript', 'PHP', 'Laravel', 'Python', 'MySQL', 'HTML5', 'CSS3'],
+    faqs: [
+      { q: 'Which technologies do you use?', a: 'Commonly React, TypeScript, PHP/Laravel and Python with MySQL, chosen to suit each project.' },
+      { q: 'Can you add features to an existing site?', a: 'Yes. We can extend or improve existing websites and web apps.' },
+      { q: 'Will the site be easy to update?', a: 'We can structure the site so content is straightforward to maintain.' },
+    ],
+  },
+  {
+    slug: 'ecommerce-development', title: 'E-commerce Development', icon: 'ShoppingCart', enquiryValue: 'E-commerce',
+    short: 'Launch your online store with a complete shopping experience and powerful management features.',
+    heroHeading: 'Your Business. Your Online Store. Your Growth.',
+    intro: 'Complete online stores with product catalogues, carts, checkout and order management, designed to make buying simple.',
+    cardFeatures: ['Product Catalogue', 'Shopping Cart', 'Checkout', 'Payment Gateway', 'Order Management'],
+    features: ['Product Management', 'Shopping Cart', 'Checkout', 'Payment Gateway', 'Order Management', 'Customer Dashboard', 'Admin Dashboard'],
+    benefits: ['Sell online around the clock', 'Easy product and order management', 'Smooth checkout experience', 'Mobile-friendly storefront'],
+    technologies: ['React', 'TypeScript', 'PHP', 'Laravel', 'MySQL'],
+    faqs: [
+      { q: 'Can you integrate payment gateways?', a: 'Yes. Payment gateway integration is part of the e-commerce scope.' },
+      { q: 'Can I manage products myself?', a: 'An admin dashboard lets you manage products, orders and customers.' },
+      { q: 'Will it work on mobile?', a: 'Yes. Storefronts are designed mobile-first.' },
+    ],
+  },
+  {
+    slug: 'branding-solutions', title: 'Branding Solutions', icon: 'Palette', enquiryValue: 'Branding',
+    short: 'Create a professional business identity that makes your brand recognizable and memorable.',
+    heroHeading: 'Make Your Brand Unforgettable.',
+    intro: 'A consistent brand identity across every touchpoint, from your logo to brochures and social media creatives.',
+    cardFeatures: ['Logo Design', 'Brand Identity', 'Business Cards', 'Brochure Design', 'Poster Design', 'Social Media Creatives'],
+    features: ['Logo Design', 'Brand Identity', 'Business Cards', 'Brochures', 'Posters', 'Social Media Designs', 'Brand Guidelines'],
+    benefits: ['Memorable, consistent identity', 'Professional first impressions', 'Print and digital ready files', 'Guidelines for future use'],
+    technologies: ['Figma', 'Illustrator', 'Photoshop'],
+    faqs: [
+      { q: 'Do you design logos from scratch?', a: 'Yes. We create logos and identities based on your business and audience.' },
+      { q: 'Will I get print-ready files?', a: 'Print and digital formats can be delivered with the final designs.' },
+      { q: 'Can you create brand guidelines?', a: 'Yes. Guidelines document your colours, typography and logo usage.' },
+    ],
+  },
+]
+
+export const getService = (slug?: string) => services.find(s => s.slug === slug)

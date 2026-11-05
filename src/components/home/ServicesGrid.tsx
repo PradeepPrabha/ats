@@ -11,7 +11,7 @@ export function ServicesGrid() {
   const [scrollLeft, setScrollLeft] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
 
-  // Fallback images
+  // Fallback images (since your data doesn't have images)
   const fallbackImages = [
     'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
     'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
@@ -24,8 +24,10 @@ export function ServicesGrid() {
   const items = services.map((service, index) => ({
     id: service.slug,
     title: service.title,
-    subtitle: service.shortDescription || 'Digital Solution',
-    image: service.image || fallbackImages[index % fallbackImages.length], 
+    // ✅ FIXED: Using service.short from your data file
+    subtitle: service.short || 'Digital Solution',
+    // ✅ FIXED: Your data doesn't have an image, so we just use fallbacks
+    image: fallbackImages[index % fallbackImages.length], 
   }))
 
   // Quadruple items for a much smoother, longer infinite loop
@@ -117,20 +119,19 @@ export function ServicesGrid() {
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          // Reduced padding to fit smaller cards
           className="flex gap-5 overflow-x-auto px-4 sm:gap-6 sm:px-[10vw] py-12 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {infiniteItems.map((item, index) => (
             <motion.div
               key={`${item.id}-${index}`}
-              // 1. ENTRANCE ANIMATION: Spin & Flip in from 3D space
+              // 1. ENTRANCE ANIMATION
               initial={{ rotateY: 45, rotateX: -15, scale: 0.8, opacity: 0, y: 50 }}
               whileInView={{ rotateY: 0, rotateX: 0, scale: 1, opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
               
-              // 2. HOVER ANIMATION: Bouncy pop with 3D tilt
+              // 2. HOVER ANIMATION
               whileHover={{ 
                 scale: 1.08, 
                 y: -15, 
@@ -141,10 +142,8 @@ export function ServicesGrid() {
                 transition: { type: "spring", stiffness: 300, damping: 20 } 
               }}
               
-              // 3. SMALLER CARD SIZE
               className="group relative flex h-[320px] w-[220px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#12121a]/80 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:h-[360px] sm:w-[260px]"
             >
-              {/* Card Inner Glow Border */}
               <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5 transition-all duration-500 group-hover:border-brand/60 group-hover:shadow-[inset_0_0_20px_rgba(233,30,99,0.1)] z-20" />
 
               {/* Image Area */}
@@ -155,7 +154,6 @@ export function ServicesGrid() {
                   draggable={false}
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-125 group-hover:rotate-1"
                 />
-                {/* Image Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#12121a] via-[#12121a]/40 to-transparent transition-opacity duration-500 group-hover:opacity-80" />
               </div>
 
@@ -178,7 +176,6 @@ export function ServicesGrid() {
                   >
                     Explore Service
                   </Link>
-                  {/* Arrow animates on hover */}
                   <motion.span 
                     whileHover={{ scale: 1.1, rotate: -45 }}
                     className="grid h-8 w-8 place-items-center rounded-full bg-white/5 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-white group-hover:shadow-[0_0_15px_rgba(233,30,99,0.6)]"
@@ -193,7 +190,7 @@ export function ServicesGrid() {
           ))}
         </div>
         
-        {/* Edge Gradients (Matched to the dark background) */}
+        {/* Edge Gradients */}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0a0a0f] to-transparent z-40 sm:w-40" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0a0a0f] to-transparent z-40 sm:w-40" />
       </div>

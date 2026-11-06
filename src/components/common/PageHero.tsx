@@ -1,16 +1,56 @@
-import { motion } from 'framer-motion'
-import { Breadcrumb } from './Breadcrumb'
-export function PageHero({ title, subtitle, crumbs, children }: { title: string; subtitle?: string; crumbs?: { label: string; to?: string }[]; children?: React.ReactNode }) {
+import { Link } from 'react-router-dom'
+import { ChevronRight, Home } from 'lucide-react'
+import { ReactNode } from 'react'
+
+interface PageHeroProps {
+  title: ReactNode // <-- CHANGED FROM string TO ReactNode
+  subtitle?: string
+  crumbs?: { label: string; to?: string }[]
+  children?: ReactNode
+  backgroundimg?: string
+}
+
+export function PageHero({ title, subtitle, crumbs, children, backgroundimg }: PageHeroProps) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-brand-soft via-white to-cyanlight">
-      <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/10 blur-3xl" aria-hidden />
-      <div className="container-x relative py-14 sm:py-20">
-        {crumbs && <div className="mb-5"><Breadcrumb items={crumbs} /></div>}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-3xl">
-          <h1 className="font-heading text-3xl font-extrabold leading-tight sm:text-5xl">{title}</h1>
-          {subtitle && <p className="mt-4 text-lg text-muted">{subtitle}</p>}
-          {children && <div className="mt-7 flex flex-wrap gap-3">{children}</div>}
-        </motion.div>
+    <section 
+      className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden border-b border-gray-100 bg-pink-50"
+      style={
+        backgroundimg
+          ? { 
+              // REMOVED the white gradient overlay. Image is now 100% visible.
+              backgroundImage: `url(${backgroundimg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+          : {}
+      }
+    >
+      <div className="container-x relative z-10">
+        {/* Breadcrumbs */}
+        {crumbs && (
+          <nav className="flex items-center gap-2 text-sm text-gray-700 mb-4 font-medium drop-shadow-sm">
+            <Link to="/" className="hover:text-pink-600 transition-colors flex items-center gap-1">
+              <Home size={14} /> Home
+            </Link>
+            {crumbs.map((crumb, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <ChevronRight size={14} />
+                <span className="text-gray-900">{crumb.label}</span>
+              </div>
+            ))}
+          </nav>
+        )}
+
+        {/* Title & Subtitle */}
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold text-black tracking-tight max-w-4xl drop-shadow-md">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="mt-4 text-lg md:text-xl text-gray-900 font-medium max-w-2xl drop-shadow-sm">
+            {subtitle}
+          </p>
+        )}
+        {children}
       </div>
     </section>
   )

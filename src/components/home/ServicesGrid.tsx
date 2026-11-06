@@ -1,214 +1,414 @@
-import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { services } from '../../data/services'
 import { SectionHeading } from '../common/SectionHeading'
 
+const FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
+  'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
+  'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
+  'https://images.unsplash.com/photo-1555421689-491a97ff2040?w=800&q=80',
+  'https://images.unsplash.com/photo-1522542550221-31fd19575a2d?w=800&q=80',
+  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80',
+]
+
+const AUTO_SCROLL_SPEED = 1.2
+const DRAG_THRESHOLD = 5
+const HAS_MOVED_RESET_MS = 100
+
 export function ServicesGrid() {
+  const navigate = useNavigate()
   const carouselRef = useRef<HTMLDivElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [startX, setStartX] = useState(0)
-  const [scrollLeft, setScrollLeft] = useState(0)
-  const [isHovered, setIsHovered] = useState(false)
+  const isHoveredRef = useRef(false)
+  const isDraggingRef = useRef(false)
+  const isTouchingRef = useRef(false)
 
-  // Fallback images (since your data doesn't have images)
-  const fallbackImages = [
-    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
-    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
-    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
-    'https://images.unsplash.com/photo-1555421689-491a97ff2040?w=800&q=80',
-    'https://images.unsplash.com/photo-1522542550221-31fd19575a2d?w=800&q=80',
-    'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80',
-  ]
-
+  // Stable items — computed once per mount, not every render
   const items = services.map((service, index) => ({
     id: service.slug,
     title: service.title,
-    // ✅ FIXED: Using service.short from your data file
     subtitle: service.short || 'Digital Solution',
-    // ✅ FIXED: Your data doesn't have an image, so we just use fallbacks
-    image: fallbackImages[index % fallbackImages.length], 
+    image: FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
   }))
 
-  // Quadruple items for a much smoother, longer infinite loop
-  const infiniteItems = [...items, ...items, ...items, ...items]
+  // Triple items for seamless loop
+  const infiniteItems = [...items, ...items, ...items]
 
-  // --- Auto Scroll Logic ---
+  const dragState = useRef({
+    startX: 0,
+    startY: 0,
+    scrollLeft: 0,
+    isPointerDown: false,
+    hasMoved: false,
+  })
+
+  // --- Init scroll position BEFORE paint to avoid visible jump ---
+  useLayoutEffect(() => {
+    const carousel = carouselRef.current
+    if (!carousel) return
+
+    // Force layout read once
+    const setInitialScroll = () => {
+      const oneSetWidth = carousel.scrollWidth / 3
+      if (oneSetWidth > 0) {
+        // Disable smooth scroll during setup — instant positioning
+        carousel.style.scrollBehavior = 'auto'
+        carousel.scrollLeft = oneSetWidth
+        // Re-enable smooth AFTER paint
+        requestAnimationFrame(() => {
+          carousel.style.scrollBehavior = ''
+        })
+      }
+    }
+
+    setInitialScroll()
+
+    // Re-apply after images load (layout may shift)
+    const images = carousel.querySelectorAll('img')
+    let pendingImages = images.length
+    if (pendingImages === 0) return
+
+    const onImgLoad = () => {
+      pendingImages--
+      if (pendingImages === 0) {
+        // Reposition based on final layout
+        const oneSetWidth = carousel.scrollWidth / 3
+        if (oneSetWidth > 0 && carousel.scrollLeft < oneSetWidth * 0.5) {
+          carousel.style.scrollBehavior = 'auto'
+          carousel.scrollLeft = oneSetWidth
+          requestAnimationFrame(() => {
+            carousel.style.scrollBehavior = ''
+          })
+        }
+      }
+    }
+
+    images.forEach((img) => {
+      if ((img as HTMLImageElement).complete) {
+        pendingImages--
+      } else {
+        img.addEventListener('load', onImgLoad, { once: true })
+        img.addEventListener('error', onImgLoad, { once: true })
+      }
+    })
+
+    if (pendingImages === 0) {
+      const oneSetWidth = carousel.scrollWidth / 3
+      if (oneSetWidth > 0) {
+        carousel.style.scrollBehavior = 'auto'
+        carousel.scrollLeft = oneSetWidth
+        requestAnimationFrame(() => {
+          carousel.style.scrollBehavior = ''
+        })
+      }
+    }
+
+    return () => {
+      images.forEach((img) => {
+        img.removeEventListener('load', onImgLoad)
+        img.removeEventListener('error', onImgLoad)
+      })
+    }
+  }, [])
+
+  // --- Auto-scroll loop (no React state in the loop) ---
   useEffect(() => {
     const carousel = carouselRef.current
     if (!carousel) return
 
-    const oneSetWidth = carousel.scrollWidth / 4
-    carousel.scrollLeft = oneSetWidth
+    let rafId = 0
+    let lastTimestamp = 0
+    let oneSetWidth = 0
 
-    let animationFrameId: number
+    // Cache width, recalc only when needed
+    const recalcWidth = () => {
+      oneSetWidth = carousel.scrollWidth / 3
+    }
+    recalcWidth()
 
-    const scroll = () => {
-      if (!isHovered && !isDragging) {
-        carousel.scrollLeft += 1.5 // Smooth, slow speed
+    // Recalc on resize (debounced by rAF)
+    let resizeRaf = 0
+    const onResize = () => {
+      cancelAnimationFrame(resizeRaf)
+      resizeRaf = requestAnimationFrame(recalcWidth)
+    }
+    window.addEventListener('resize', onResize, { passive: true })
 
-        // Seamless infinite reset logic
-        if (carousel.scrollLeft >= oneSetWidth * 3) {
+    const tick = (timestamp: number) => {
+      if (!lastTimestamp) lastTimestamp = timestamp
+      const delta = timestamp - lastTimestamp
+      lastTimestamp = timestamp
+
+      const paused =
+        isHoveredRef.current || isDraggingRef.current || isTouchingRef.current
+
+      if (!paused && oneSetWidth > 0) {
+        // Frame-rate independent scroll
+        const step = AUTO_SCROLL_SPEED * (delta / 16.67)
+        carousel.scrollLeft += step
+
+        if (carousel.scrollLeft >= oneSetWidth * 2) {
           carousel.scrollLeft -= oneSetWidth
         } else if (carousel.scrollLeft <= 0) {
           carousel.scrollLeft += oneSetWidth
         }
       }
-      animationFrameId = requestAnimationFrame(scroll)
+
+      rafId = requestAnimationFrame(tick)
     }
 
-    animationFrameId = requestAnimationFrame(scroll)
+    rafId = requestAnimationFrame(tick)
 
-    return () => cancelAnimationFrame(animationFrameId)
-  }, [isHovered, isDragging])
+    return () => {
+      cancelAnimationFrame(rafId)
+      cancelAnimationFrame(resizeRaf)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
 
-  // --- Drag to Scroll Logic ---
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!carouselRef.current) return
-    setIsDragging(true)
-    setStartX(e.pageX - carouselRef.current.offsetLeft)
-    setScrollLeft(carouselRef.current.scrollLeft)
-  }
+  // --- Pointer drag handlers ---
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    const carousel = carouselRef.current
+    if (!carousel) return
 
-  const handleMouseLeave = () => {
-    setIsDragging(false)
-    setIsHovered(false)
-  }
+    dragState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      scrollLeft: carousel.scrollLeft,
+      isPointerDown: true,
+      hasMoved: false,
+    }
+    isDraggingRef.current = true
+  }, [])
 
-  const handleMouseUp = () => setIsDragging(false)
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const carousel = carouselRef.current
+    const state = dragState.current
+    if (!carousel || !state.isPointerDown) return
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !carouselRef.current) return
-    e.preventDefault()
-    const x = e.pageX - carouselRef.current.offsetLeft
-    const walk = (x - startX) * 2
-    carouselRef.current.scrollLeft = scrollLeft - walk
-  }
+    const deltaX = e.clientX - state.startX
+    const deltaY = e.clientY - state.startY
+
+    if (
+      !state.hasMoved &&
+      Math.abs(deltaX) > Math.abs(deltaY) &&
+      Math.abs(deltaX) > DRAG_THRESHOLD
+    ) {
+      state.hasMoved = true
+      carousel.setPointerCapture?.(e.pointerId)
+    }
+
+    if (state.hasMoved) {
+      e.preventDefault()
+      const walk = deltaX * 1.5
+      carousel.scrollLeft = state.scrollLeft - walk
+    }
+  }, [])
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    const carousel = carouselRef.current
+    const state = dragState.current
+
+    if (carousel?.hasPointerCapture?.(e.pointerId)) {
+      carousel.releasePointerCapture(e.pointerId)
+    }
+
+    if (state.hasMoved) {
+      setTimeout(() => {
+        dragState.current.hasMoved = false
+      }, HAS_MOVED_RESET_MS)
+    }
+
+    state.isPointerDown = false
+    isDraggingRef.current = false
+  }, [])
+
+  const handleCardClick = useCallback(
+    (slug: string) => {
+      if (dragState.current.hasMoved) return
+      navigate(`/services/${slug}`)
+    },
+    [navigate]
+  )
+
+  const handleCardKeyDown = useCallback(
+    (e: React.KeyboardEvent, slug: string) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        if (!dragState.current.hasMoved) {
+          navigate(`/services/${slug}`)
+        }
+      }
+    },
+    [navigate]
+  )
+
+  const handleMouseEnter = useCallback(() => {
+    isHoveredRef.current = true
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    isHoveredRef.current = false
+    isDraggingRef.current = false
+    dragState.current.isPointerDown = false
+  }, [])
+
+  const handleTouchStart = useCallback(() => {
+    isTouchingRef.current = true
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    isTouchingRef.current = false
+  }, [])
 
   return (
-    <section className="relative overflow-hidden bg-[#0a0a0f] py-20">
-      
-      {/* Dynamic Background Gradients */}
+    <section className="relative overflow-hidden bg-[#0a0a0f] py-12 sm:py-16 md:py-20">
+      {/* Background Gradients */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/4 h-[500px] w-[500px] rounded-full bg-brand/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-[100px]" />
+        <div className="absolute -top-40 left-1/4 h-[300px] w-[300px] rounded-full bg-brand/20 blur-[120px] sm:h-[500px] sm:w-[500px]" />
+        <div className="absolute bottom-0 right-1/4 h-[250px] w-[250px] rounded-full bg-cyan-500/10 blur-[100px] sm:h-[400px] sm:w-[400px]" />
       </div>
 
-      {/* Header Container */}
+      {/* Header */}
       <div className="container-x relative z-10">
         <div className="text-center text-white">
           <div className="[&_h2]:text-white [&_p]:text-gray-400">
-            <SectionHeading 
-              eyebrow="Our Technology Services" 
-              title="Our Technology Services" 
-              subtitle="Complete Digital Solutions to Move Your Business Forward." 
+            <SectionHeading
+              eyebrow="Our Technology Services"
+              title="Our Technology Services"
+              subtitle="Complete Digital Solutions to Move Your Business Forward."
             />
           </div>
         </div>
       </div>
 
-      {/* FULL WIDTH 3D Carousel Container */}
-      <div 
-        className="relative mt-10 w-full cursor-grab active:cursor-grabbing"
-        style={{ perspective: '1400px' }} 
-        onMouseEnter={() => setIsHovered(true)}
+      {/* Carousel */}
+      <div
+        className="relative mt-6 w-full sm:mt-8 md:mt-10"
+        style={{ perspective: '1400px' }}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <div 
+        <div
           ref={carouselRef}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          className="flex gap-5 overflow-x-auto px-4 sm:gap-6 sm:px-[10vw] py-12 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-          style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={(e) => {
+            if (dragState.current.isPointerDown) handlePointerUp(e)
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onDragStart={(e) => e.preventDefault()}
+          className="flex gap-3 overflow-x-auto px-4 py-8 sm:gap-5 sm:px-6 sm:py-10 md:gap-6 md:px-[10vw] md:py-12
+            [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
+            touch-pan-y select-none cursor-grab active:cursor-grabbing"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y pinch-zoom',
+            // IMPORTANT: no scrollBehavior here — we manage it imperatively
+            willChange: 'scroll-position',
+          }}
         >
           {infiniteItems.map((item, index) => (
             <motion.div
               key={`${item.id}-${index}`}
-              // 1. ENTRANCE ANIMATION
-              initial={{ rotateY: 45, rotateX: -15, scale: 0.8, opacity: 0, y: 50 }}
-              whileInView={{ rotateY: 0, rotateX: 0, scale: 1, opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
-              
-              // 2. HOVER ANIMATION
-              whileHover={{ 
-                scale: 1.08, 
-                y: -15, 
-                rotateY: 0,
-                rotateX: 5,
-                zIndex: 50,
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(233, 30, 99, 0.4)",
-                transition: { type: "spring", stiffness: 300, damping: 20 } 
+              // Only animate on first render — no whileInView (which re-runs on refresh)
+              initial={false}
+              whileHover={{
+                scale: 1.04,
+                y: -8,
+                transition: { type: 'spring', stiffness: 300, damping: 22 },
               }}
-              
-              className="group relative flex h-[320px] w-[220px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#12121a]/80 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:h-[360px] sm:w-[260px]"
+              onClick={() => handleCardClick(item.id)}
+              onKeyDown={(e) => handleCardKeyDown(e, item.id)}
+              role="link"
+              tabIndex={0}
+              aria-label={`View details for ${item.title}`}
+              className="group relative flex h-[280px] w-[200px] shrink-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#12121a]/80 shadow-2xl backdrop-blur-xl
+                outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]
+                transform-gpu
+                xs:h-[300px] xs:w-[220px]
+                sm:h-[340px] sm:w-[250px]
+                md:h-[360px] md:w-[260px]"
             >
-              <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5 transition-all duration-500 group-hover:border-brand/60 group-hover:shadow-[inset_0_0_20px_rgba(233,30,99,0.1)] z-20" />
+              <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl border border-white/5 transition-colors duration-500 group-hover:border-brand/60" />
 
-              {/* Image Area */}
-              <div className="relative h-[50%] w-full overflow-hidden">
-                <img 
-                  src={item.image} 
+              {/* Image */}
+              <div className="relative h-[48%] w-full overflow-hidden">
+                <img
+                  src={item.image}
                   alt={item.title}
                   draggable={false}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-125 group-hover:rotate-1"
+                  loading="lazy"
+                  decoding="async"
+                  className="pointer-events-none h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#12121a] via-[#12121a]/40 to-transparent transition-opacity duration-500 group-hover:opacity-80" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#12121a] via-[#12121a]/40 to-transparent" />
               </div>
 
-              {/* Content Area */}
-              <div className="relative z-10 flex flex-1 flex-col justify-between p-5">
+              {/* Content */}
+              <div className="relative z-10 flex flex-1 flex-col justify-between p-3.5 sm:p-4 md:p-5">
                 <div>
-                  <h3 className="font-heading text-lg font-bold text-white transition-all duration-300 group-hover:text-brand sm:text-xl group-hover:translate-x-1">
+                  <h3 className="font-heading text-base font-bold text-white transition-colors duration-300 group-hover:text-brand sm:text-lg md:text-xl line-clamp-2">
                     {item.title}
                   </h3>
-                  <p className="mt-2 text-xs leading-relaxed text-gray-400 line-clamp-2 transition-colors duration-300 group-hover:text-gray-300">
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400 line-clamp-2 transition-colors duration-300 group-hover:text-gray-300 sm:mt-2 sm:text-xs">
                     {item.subtitle}
                   </p>
                 </div>
 
-                {/* Explore Button */}
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-                  <Link 
+                <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-3 sm:mt-4 sm:pt-4">
+                  <Link
                     to={`/services/${item.id}`}
-                    className="inline-flex items-center gap-2 text-xs font-bold text-white transition-colors hover:text-brand sm:text-sm"
+                    onClick={(e) => {
+                      if (dragState.current.hasMoved) {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white transition-colors hover:text-brand sm:text-xs md:text-sm"
                   >
                     Explore Service
                   </Link>
-                  <motion.span 
-                    whileHover={{ scale: 1.1, rotate: -45 }}
-                    className="grid h-8 w-8 place-items-center rounded-full bg-white/5 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-white group-hover:shadow-[0_0_15px_rgba(233,30,99,0.6)]"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-white/5 text-brand transition-all duration-300 group-hover:bg-brand group-hover:text-white sm:h-8 sm:w-8">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="sm:h-3.5 sm:w-3.5"
+                    >
+                      <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
-                  </motion.span>
+                  </span>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
-        
+
         {/* Edge Gradients */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0a0a0f] to-transparent z-40 sm:w-40" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0a0a0f] to-transparent z-40 sm:w-40" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-40 w-8 bg-gradient-to-r from-[#0a0a0f] to-transparent sm:w-20 md:w-40" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-40 w-8 bg-gradient-to-l from-[#0a0a0f] to-transparent sm:w-20 md:w-40" />
       </div>
 
-      {/* Button Container */}
-      <div className="container-x relative z-10 mt-4 text-center">
-        <Link 
-          to="/services" 
-          className="group inline-flex items-center gap-2 rounded-full border border-brand/50 bg-brand/10 px-8 py-3.5 text-sm font-bold text-brand backdrop-blur-md transition-all hover:bg-brand hover:text-white hover:shadow-[0_0_20px_rgba(233,30,99,0.4)]"
+      {/* CTA */}
+      <div className="container-x relative z-10 mt-2 text-center sm:mt-4">
+        <Link
+          to="/services"
+          className="group inline-flex items-center gap-2 rounded-full border border-brand/50 bg-brand/10 px-6 py-3 text-xs font-bold text-brand backdrop-blur-md transition-all hover:bg-brand hover:text-white sm:px-8 sm:py-3.5 sm:text-sm"
         >
           View All Services
-          <motion.span 
-            animate={{ x: [0, 5, 0] }} 
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            className="inline-block"
-          >
+          <span className="inline-block transition-transform group-hover:translate-x-1">
             &rarr;
-          </motion.span>
+          </span>
         </Link>
       </div>
     </section>

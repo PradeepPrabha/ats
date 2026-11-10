@@ -63,7 +63,7 @@ export function InternshipBanner() {
               </Link>
               <Link
                 to="/apply-internship"
-                className="btn-outline border-white/40 text-white hover:bg-white hover:text-brand"
+                className="btn-outline border-white/40 text-black hover:bg-white hover:text-brand"
               >
                 Apply Now
               </Link>

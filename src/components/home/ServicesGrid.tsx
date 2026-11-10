@@ -17,12 +17,38 @@ const AUTO_SCROLL_SPEED = 1.2
 const DRAG_THRESHOLD = 5
 const HAS_MOVED_RESET_MS = 100
 
+// --- Typewriter hook ---
+function useTypewriter(text: string, speed = 80, startDelay = 400) {
+  const [displayed, setDisplayed] = useState('')
+  const [started, setStarted] = useState(false)
+
+  useEffect(() => {
+    const startTimer = setTimeout(() => setStarted(true), startDelay)
+    return () => clearTimeout(startTimer)
+  }, [startDelay])
+
+  useEffect(() => {
+    if (!started) return
+    if (displayed.length >= text.length) return
+
+    const timer = setTimeout(() => {
+      setDisplayed(text.slice(0, displayed.length + 1))
+    }, speed)
+
+    return () => clearTimeout(timer)
+  }, [started, displayed, text, speed])
+
+  return displayed
+}
+
 export function ServicesGrid() {
   const navigate = useNavigate()
   const carouselRef = useRef<HTMLDivElement>(null)
   const isHoveredRef = useRef(false)
   const isDraggingRef = useRef(false)
   const isTouchingRef = useRef(false)
+
+  const typedText = useTypewriter('Technology Services', 80, 500)
 
   // Stable items — computed once per mount, not every render
   const items = services.map((service, index) => ({
@@ -48,14 +74,11 @@ export function ServicesGrid() {
     const carousel = carouselRef.current
     if (!carousel) return
 
-    // Force layout read once
     const setInitialScroll = () => {
       const oneSetWidth = carousel.scrollWidth / 3
       if (oneSetWidth > 0) {
-        // Disable smooth scroll during setup — instant positioning
         carousel.style.scrollBehavior = 'auto'
         carousel.scrollLeft = oneSetWidth
-        // Re-enable smooth AFTER paint
         requestAnimationFrame(() => {
           carousel.style.scrollBehavior = ''
         })
@@ -64,7 +87,6 @@ export function ServicesGrid() {
 
     setInitialScroll()
 
-    // Re-apply after images load (layout may shift)
     const images = carousel.querySelectorAll('img')
     let pendingImages = images.length
     if (pendingImages === 0) return
@@ -72,7 +94,6 @@ export function ServicesGrid() {
     const onImgLoad = () => {
       pendingImages--
       if (pendingImages === 0) {
-        // Reposition based on final layout
         const oneSetWidth = carousel.scrollWidth / 3
         if (oneSetWidth > 0 && carousel.scrollLeft < oneSetWidth * 0.5) {
           carousel.style.scrollBehavior = 'auto'
@@ -112,7 +133,7 @@ export function ServicesGrid() {
     }
   }, [])
 
-  // --- Auto-scroll loop (no React state in the loop) ---
+  // --- Auto-scroll loop ---
   useEffect(() => {
     const carousel = carouselRef.current
     if (!carousel) return
@@ -121,13 +142,11 @@ export function ServicesGrid() {
     let lastTimestamp = 0
     let oneSetWidth = 0
 
-    // Cache width, recalc only when needed
     const recalcWidth = () => {
       oneSetWidth = carousel.scrollWidth / 3
     }
     recalcWidth()
 
-    // Recalc on resize (debounced by rAF)
     let resizeRaf = 0
     const onResize = () => {
       cancelAnimationFrame(resizeRaf)
@@ -144,7 +163,6 @@ export function ServicesGrid() {
         isHoveredRef.current || isDraggingRef.current || isTouchingRef.current
 
       if (!paused && oneSetWidth > 0) {
-        // Frame-rate independent scroll
         const step = AUTO_SCROLL_SPEED * (delta / 16.67)
         carousel.scrollLeft += step
 
@@ -273,13 +291,19 @@ export function ServicesGrid() {
       {/* Header */}
       <div className="container-x relative z-10">
         <div className="text-center text-white">
-          <div className="[&_h2]:text-white [&_p]:text-gray-400">
-            <SectionHeading
-              eyebrow="Our Technology Services"
-              title="Our Technology Services"
-              subtitle="Complete Digital Solutions to Move Your Business Forward."
-            />
-          </div>
+          <h2 className="font-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            Our{' '}
+            <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 bg-clip-text text-transparent">
+              {typedText}
+            </span>
+            {/* Blinking cursor */}
+            {typedText.length < 'Technology Services'.length && (
+              <span className="ml-1 inline-block h-[0.9em] w-[3px] animate-pulse bg-pink-400 align-middle" />
+            )}
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-400 sm:mt-5 sm:text-base md:text-lg">
+            Complete Digital Solutions to Move Your Business Forward.
+          </p>
         </div>
       </div>
 
@@ -308,14 +332,12 @@ export function ServicesGrid() {
           style={{
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y pinch-zoom',
-            // IMPORTANT: no scrollBehavior here — we manage it imperatively
             willChange: 'scroll-position',
           }}
         >
           {infiniteItems.map((item, index) => (
             <motion.div
               key={`${item.id}-${index}`}
-              // Only animate on first render — no whileInView (which re-runs on refresh)
               initial={false}
               whileHover={{
                 scale: 1.04,

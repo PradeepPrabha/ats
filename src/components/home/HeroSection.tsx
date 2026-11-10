@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, GraduationCap, CheckCircle2, Code2, MonitorSmartphone, ShieldCheck } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import heroBg from '../../assets/images/intern-student.webp' // <-- YOUR BACKGROUND IMAGE
+import heroBg from '../../assets/images/Neon Magenta Cybernetic Portal.png' // <-- YOUR BACKGROUND IMAGE
 
 // --- CUSTOM TYPEWRITER HOOK (FIXED TYPES) ---
 function useTypewriter(text: string, speed: number = 40, startDelay: number = 0) {
@@ -50,8 +50,7 @@ export function HeroSection() {
           alt="Accent Techno Soft - Intelligent Digital Solutions"
           className="h-full w-full object-cover object-center"
         />
-        {/* Dark gradient overlay to ensure the text is readable while keeping the right side visible */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#060b19]/95 via-[#060b19]/80 to-transparent" />
+       
         {/* Bottom gradient for smooth blending */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#060b19]/90 via-transparent to-transparent" />
         

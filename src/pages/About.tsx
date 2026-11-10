@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Star,
   Home,
+  ChevronRight,
   ArrowRight,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -50,53 +51,41 @@ export default function About() {
       style={{ fontFamily: "'Poppins', 'Inter', system-ui, sans-serif" }}
     >
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');`}</style>
-      {/* 1. HERO */}
-      <section className="relative bg-white pt-24 pb-10 md:pt-28 md:pb-14">
-        {/* soft pink swoosh */}
-        <div className="pointer-events-none absolute -left-24 top-0 h-full w-2/3 bg-gradient-to-r from-pink-100/70 via-pink-50/40 to-transparent" />
-        <div
-          className="pointer-events-none absolute right-[42%] top-0 hidden h-full w-24 bg-gradient-to-b from-pink-300/50 to-pink-100/20 md:block"
-          style={{ clipPath: 'polygon(55% 0, 100% 0, 45% 100%, 0 100%)' }}
-        />
+      
+      {/* 1. HERO - Full width background image */}
+      <section 
+        className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden border-b border-gray-100 bg-gray-900"
+        style={{
+          backgroundImage: `url(${IMAGES.hero})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/50 z-0" />
 
-        <div className="container-x relative z-10 grid items-center md:grid-cols-2">
-          <div className="max-w-lg py-6">
-            <nav className="mb-8 flex items-center gap-2 text-sm text-gray-600">
-              <Link to="/" className="flex items-center gap-1 font-medium text-[#e6007e]">
-                <Home size={12} /> Home
-              </Link>
-              <span>/</span>
-              <span>About Us</span>
-            </nav>
+        <div className="container-x relative z-10">
+          <nav className="mb-4 flex items-center gap-2 text-sm text-gray-200 font-medium drop-shadow-sm">
+            <Link to="/" className="flex items-center gap-1 hover:text-pink-400 transition-colors">
+              <Home size={14} /> Home
+            </Link>
+            <ChevronRight size={14} />
+            <span className="text-white">About Us</span>
+          </nav>
 
-            <div className="flex gap-3">
-              <div className="mt-2 h-10 w-[3px] shrink-0 bg-[#e6007e]" />
-              <h1 className="text-[40px] font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-[58px]">
-                <span className="block text-gray-900">About</span>
-                <span className="block text-[#e6007e]">Accent Techno Soft</span>
-              </h1>
-            </div>
-
-            <p className="mt-6 max-w-md text-base leading-relaxed text-gray-700">
-              A technology solutions company delivering innovative software, digital services and
-              practical learning opportunities.
-            </p>
-            <Bar className="mt-5 w-16" />
+          <div className="flex gap-3">
+            <div className="mt-1.5 h-10 w-[3px] shrink-0 bg-[#e6007e]" />
+            <h1 className="text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl text-[#e6007e] drop-shadow-md">
+              <span className="block">About</span>
+              <span className="block text-white">Accent Techno Soft</span>
+            </h1>
           </div>
 
-          {/* spacer for the absolute image on desktop */}
-          <div className="hidden md:block" />
-        </div>
-
-        {/* slanted hero image, bleeds to the right edge */}
-        <div
-          className="absolute right-0 top-0 hidden h-full w-[52%] md:block"
-          style={{ clipPath: 'polygon(14% 0, 100% 0, 100% 100%, 0 100%)' }}
-        >
-          <img src={IMAGES.hero} alt="ATS office" className="h-full w-full object-cover" />
-        </div>
-        <div className="container-x mt-6 md:hidden">
-          <img src={IMAGES.hero} alt="ATS office" className="h-56 w-full rounded-2xl object-cover" />
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-white font-medium drop-shadow-sm">
+            A technology solutions company delivering innovative software, digital services and
+            practical learning opportunities.
+          </p>
+          <Bar className="mt-6 w-16" />
         </div>
       </section>
 
@@ -131,7 +120,7 @@ export default function About() {
             </a>
           </div>
 
-          <div className="flex flex-col gap-5 md:col-span-3 md:border-l md:border-gray-100 md:pl-8">
+          <div className="flex flex-col gap-5 md:col-span-3 md:border-l">
             {[
               { icon: Code2, title: 'IT Services & Solutions' },
               { icon: GraduationCap, title: 'Internship & Skill Development' },

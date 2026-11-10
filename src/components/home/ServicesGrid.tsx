@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { services } from '../../data/services'
-import { SectionHeading } from '../common/SectionHeading'
 
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
@@ -16,6 +15,7 @@ const FALLBACK_IMAGES = [
 const AUTO_SCROLL_SPEED = 1.2
 const DRAG_THRESHOLD = 5
 const HAS_MOVED_RESET_MS = 100
+const PINK_TEXT = 'Technology Services'
 
 // --- Typewriter hook ---
 function useTypewriter(text: string, speed = 80, startDelay = 400) {
@@ -48,7 +48,7 @@ export function ServicesGrid() {
   const isDraggingRef = useRef(false)
   const isTouchingRef = useRef(false)
 
-  const typedText = useTypewriter('Technology Services', 80, 500)
+  const typedText = useTypewriter(PINK_TEXT, 80, 500)
 
   // Stable items — computed once per mount, not every render
   const items = services.map((service, index) => ({
@@ -280,6 +280,8 @@ export function ServicesGrid() {
     isTouchingRef.current = false
   }, [])
 
+  const isTyping = typedText.length < PINK_TEXT.length
+
   return (
     <section className="relative overflow-hidden bg-[#0a0a0f] py-12 sm:py-16 md:py-20">
       {/* Background Gradients */}
@@ -290,14 +292,13 @@ export function ServicesGrid() {
 
       {/* Header */}
       <div className="container-x relative z-10">
-        <div className="text-center text-white">
-          <h2 className="font-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-            Our{' '}
+        <div className="text-center">
+          <h2 className="font-heading text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+            <span className="text-white">Our</span>{' '}
             <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 bg-clip-text text-transparent">
               {typedText}
             </span>
-            {/* Blinking cursor */}
-            {typedText.length < 'Technology Services'.length && (
+            {isTyping && (
               <span className="ml-1 inline-block h-[0.9em] w-[3px] animate-pulse bg-pink-400 align-middle" />
             )}
           </h2>

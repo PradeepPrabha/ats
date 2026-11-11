@@ -17,10 +17,11 @@ const DRAG_THRESHOLD = 5
 const HAS_MOVED_RESET_MS = 100
 const PINK_TEXT = 'Technology Services'
 
-// --- Typewriter hook ---
-function useTypewriter(text: string, speed = 80, startDelay = 400) {
+// --- Typewriter hook with natural typing rhythm ---
+function useTypewriter(text: string, baseSpeed = 80, startDelay = 400) {
   const [displayed, setDisplayed] = useState('')
   const [started, setStarted] = useState(false)
+  const [isDone, setIsDone] = useState(false)
 
   useEffect(() => {
     const startTimer = setTimeout(() => setStarted(true), startDelay)
@@ -29,16 +30,28 @@ function useTypewriter(text: string, speed = 80, startDelay = 400) {
 
   useEffect(() => {
     if (!started) return
-    if (displayed.length >= text.length) return
+    if (displayed.length >= text.length) {
+      setIsDone(true)
+      return
+    }
+
+    // Natural typing variation: slight pauses after spaces, faster mid-word
+    const char = text[displayed.length]
+    const prevChar = displayed.length > 0 ? text[displayed.length - 1] : ''
+    let delay = baseSpeed
+
+    if (prevChar === ' ') delay = baseSpeed * 2.2       // pause after space
+    else if (char === ' ') delay = baseSpeed * 0.6       // quick before space
+    else delay = baseSpeed * (0.7 + Math.random() * 0.6) // slight human jitter
 
     const timer = setTimeout(() => {
       setDisplayed(text.slice(0, displayed.length + 1))
-    }, speed)
+    }, delay)
 
     return () => clearTimeout(timer)
-  }, [started, displayed, text, speed])
+  }, [started, displayed, text, baseSpeed])
 
-  return displayed
+  return { displayed, isDone, isTyping: started && !isDone }
 }
 
 export function ServicesGrid() {
@@ -48,7 +61,7 @@ export function ServicesGrid() {
   const isDraggingRef = useRef(false)
   const isTouchingRef = useRef(false)
 
-  const typedText = useTypewriter(PINK_TEXT, 80, 500)
+  const { displayed: typedText, isTyping } = useTypewriter(PINK_TEXT, 75, 500)
 
   // Stable items — computed once per mount, not every render
   const items = services.map((service, index) => ({
@@ -280,8 +293,6 @@ export function ServicesGrid() {
     isTouchingRef.current = false
   }, [])
 
-  const isTyping = typedText.length < PINK_TEXT.length
-
   return (
     <section className="relative overflow-hidden bg-[#0a0a0f] py-12 sm:py-16 md:py-20">
       {/* Background Gradients */}
@@ -295,12 +306,26 @@ export function ServicesGrid() {
         <div className="text-center">
           <h2 className="font-heading text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
             <span className="text-white">Our</span>{' '}
-            <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 bg-clip-text text-transparent">
-              {typedText}
+            <span className="relative inline-block">
+              {/* Gradient text with glow */}
+              <span className="bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 bg-clip-text text-transparent">
+                {typedText}
+              </span>
+
+              {/* Blinking caret — only while typing */}
+              {isTyping && (
+                <span
+                  className="ml-0.5 inline-block h-[0.85em] w-[2.5px] animate-pulse rounded-full bg-pink-400 align-middle shadow-[0_0_8px_rgba(244,114,182,0.8)]"
+                  aria-hidden="true"
+                />
+              )}
+
+              {/* Soft glow behind text */}
+              <span
+                className="pointer-events-none absolute inset-0 -z-10 bg-pink-500/20 blur-2xl"
+                aria-hidden="true"
+              />
             </span>
-            {isTyping && (
-              <span className="ml-1 inline-block h-[0.9em] w-[3px] animate-pulse bg-pink-400 align-middle" />
-            )}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-400 sm:mt-5 sm:text-base md:text-lg">
             Complete Digital Solutions to Move Your Business Forward.
@@ -426,7 +451,7 @@ export function ServicesGrid() {
       <div className="container-x relative z-10 mt-2 text-center sm:mt-4">
         <Link
           to="/services"
-          className="group inline-flex items-center gap-2 rounded-full border border-brand/50 bg-brand/10 px-6 py-3 text-xs font-bold text-brand backdrop-blur-md transition-all hover:bg-brand hover:text-white sm:px-8 sm:py-3.5 sm:text-sm"
+          className="group inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/10 px-6 py-3 text-xs font-bold text-white backdrop-blur-md transition-all hover:bg-brand hover:text-white sm:px-8 sm:py-3.5 sm:text-sm"
         >
           View All Services
           <span className="inline-block transition-transform group-hover:translate-x-1">
